@@ -11,11 +11,11 @@
 #define OID_H_
 
 typedef struct {
-    u_char octet;
-    u_int  next;
-    u_int  down;
-    u_int  level;
-    const u_char *name;
+    unsigned char octet;
+    unsigned int  next;
+    unsigned int  down;
+    unsigned int  level;
+    const unsigned char *name;
 } oid_t;
 
 extern const oid_t oid_names[];

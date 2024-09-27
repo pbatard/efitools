@@ -15,7 +15,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define __STDC_VERSION__ 199901L
 #include <efi.h>
 
 #include <kernel_efivars.h>

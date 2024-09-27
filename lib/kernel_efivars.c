@@ -16,7 +16,6 @@
 #include <unistd.h>
 #include <time.h>
 
-#define __STDC_VERSION__ 199901L
 #include <efi.h>
 
 #include <kernel_efivars.h>
@@ -29,54 +28,39 @@ static char *kernel_efi_path = NULL;
 void
 kernel_variable_init(void)
 {
-	char fname[] = "/tmp/efi.XXXXXX";
-	char cmdline[256];
-	int fd, ret;
-	struct stat st;
-	char *buf;
+	FILE *mount_l_fp = NULL;
+	char *path = NULL;
+	char *type = NULL;
 
-	if (kernel_efi_path)
-		return;
-	mktemp(fname);
-	snprintf(cmdline, sizeof(cmdline), "mount -l > %s", fname);
-	ret = system(cmdline);
-	if (WEXITSTATUS(ret) != 0)
-		/* hopefully stderr said what was wrong */
-		exit(1);
-	fd = open(fname, O_RDONLY);
-	unlink(fname);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open output of %s\n", cmdline);
+	mount_l_fp = popen("mount -l", "r");
+
+	if (mount_l_fp == NULL) {
+		fprintf(stderr, "Failed to get output of mount -l\n");
 		exit(1);
 	}
-	if (fstat(fd, &st) < 0) {
-		perror("stat failed");
-		exit(1);
-	}
-	if (st.st_size == 0) {
-		fprintf(stderr, "No efivarfs filesystem is mounted\n");
-		exit(1);
-	}
-	buf = malloc(st.st_size);
-	read(fd, buf, st.st_size);
-	close(fd);
 
-	char *ptr = buf;
-	char path[512], type[512];
-	while (ptr < buf + st.st_size) {
-		int count;
-
-		sscanf(ptr, "%*s on %s type %s %*[^\n]\n%n", path, type, &count);
-		ptr += count;
-		if (strcmp(type, "efivarfs") == 0)
+	while (fscanf(mount_l_fp, "%*s on %ms type %ms %*[^\n]\n", &path, &type) == 2) {
+		if (strcmp(type, "efivarfs") == 0) {
+			kernel_efi_path = strdup(path);
 			break;
+		}
+		free(path);
+		path = NULL;
+		free(type);
+		type = NULL;
 	}
-	if (strcmp(type, "efivarfs") != 0) {
+
+	if (mount_l_fp != NULL)
+		pclose(mount_l_fp);
+	if (path != NULL)
+		free(path);
+	if (type != NULL)
+		free(type);
+
+	if (kernel_efi_path == NULL) {
 		fprintf(stderr, "No efivarfs filesystem is mounted\n");
 		exit(1);
 	}
-	kernel_efi_path = malloc(strlen(path) + 1);
-	strcpy(kernel_efi_path, path);
 }
 
 int

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -20,7 +21,6 @@
 #include <openssl/err.h>
 #include <openssl/pem.h>
 
-#define __STDC_VERSION__ 199901L
 #include <efi.h>
 
 #include <kernel_efivars.h>

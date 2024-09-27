@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define __STDC_VERSION__ 199901L
 #include <efi.h>
 
 #include <version.h>
