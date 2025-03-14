@@ -30,15 +30,21 @@ include Make.rules
 
 EFISIGNED = $(patsubst %.efi,%-signed.efi,$(EFIFILES))
 
+ifneq (,(filter $(ARCH),aarch64 riscv64))
+all: $(BINARIES) $(MANPAGES) noPK.auth $(KEYAUTH) \
+	$(KEYUPDATEAUTH) $(KEYBLACKLISTAUTH) $(KEYHASHBLACKLISTAUTH)
+else
 all: $(EFISIGNED) $(BINARIES) $(MANPAGES) noPK.auth $(KEYAUTH) \
 	$(KEYUPDATEAUTH) $(KEYBLACKLISTAUTH) $(KEYHASHBLACKLISTAUTH)
-
+endif
 
 install: all
 	$(INSTALL) -m 755 -d $(MANDIR)
 	$(INSTALL) -m 644 $(MANPAGES) $(MANDIR)
+ifeq (,(filter $(ARCH),aarch64 riscv64))
 	$(INSTALL) -m 755 -d $(EFIDIR)
 	$(INSTALL) -m 755 $(EFIFILES) $(EFIDIR)
+endif
 	$(INSTALL) -m 755 -d $(BINDIR)
 	$(INSTALL) -m 755 $(BINARIES) $(BINDIR)
 	$(INSTALL) -m 755 mkusb.sh $(BINDIR)/efitool-mkusb
