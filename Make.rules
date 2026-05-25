@@ -30,7 +30,7 @@ CRTOBJS		= $(CRTPATH)/$(CRTOBJ)
 LDSCRIPT	= elf_$(ARCH)_efi.lds
 LDFLAGS		+= -shared -Bsymbolic $(CRTOBJS) -L $(CRTPATH) -L /usr/lib -L /usr/lib64 -T $(LDSCRIPT)
 LOADLIBES	= -lefi -lgnuefi $(shell $(CC) $(ARCH3264) -print-libgcc-file-name)
-FORMAT		= --target=efi-app-$(ARCH)
+FORMAT		= --output-target=efi-app-$(ARCH)
 OBJCOPY		= objcopy
 MYGUID		= 11111111-2222-3333-4444-123456789abc
 INSTALL		= install
