@@ -290,7 +290,7 @@ sha256_get_pecoff_digest_mem(void *buffer, UINTN DataSize,
 	 * filled to the end of the page */
 	DataSize = ALIGN_VALUE(DataSize, 8);
 
-	efi_status = pecoff_read_header(&context, buffer);
+	efi_status = pecoff_read_header(&context, buffer, DataSize);
 	if (efi_status != EFI_SUCCESS) {
 		Print(L"Failed to read header\n");
 		return efi_status;

@@ -69,7 +69,7 @@
 #include <buildefi.h>
 
 EFI_STATUS
-pecoff_read_header(PE_COFF_LOADER_IMAGE_CONTEXT *context, void *data)
+pecoff_read_header(PE_COFF_LOADER_IMAGE_CONTEXT *context, void *data, UINTN size)
 {
 	EFI_IMAGE_DOS_HEADER *DosHdr = data;
 	EFI_IMAGE_OPTIONAL_HEADER_UNION *PEHdr = data;
@@ -116,7 +116,7 @@ pecoff_read_header(PE_COFF_LOADER_IMAGE_CONTEXT *context, void *data)
 	context->NumberOfSections = PEHdr->Pe32.FileHeader.NumberOfSections;
 	context->FirstSection = (EFI_IMAGE_SECTION_HEADER *)((char *)PEHdr + PEHdr->Pe32.FileHeader.SizeOfOptionalHeader + sizeof(UINT32) + sizeof(EFI_IMAGE_FILE_HEADER));
 
-	if (context->SecDir->VirtualAddress >= context->ImageSize) {
+	if (context->SecDir->VirtualAddress >= size) {
 		Print(L"secdir vaddr 0x%x >= ImageSize 0x%x\n",
 		      context->SecDir->VirtualAddress, context->ImageSize);
 		Print(L"Malformed security header\n");
@@ -405,7 +405,7 @@ pecoff_execute_image(EFI_FILE *file, CHAR16 *name, EFI_HANDLE image,
 	}
 
 	Print(L"Read %d bytes from %s\n", DataSize, name);
-	efi_status = pecoff_read_header(&context, buffer);
+	efi_status = pecoff_read_header(&context, buffer, DataSize);
 	if (efi_status != EFI_SUCCESS) {
 		Print(L"Failed to read header\n");
 		goto out;

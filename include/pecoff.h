@@ -1,7 +1,8 @@
 #include <PeImage.h>
 
 EFI_STATUS
-pecoff_read_header(PE_COFF_LOADER_IMAGE_CONTEXT *context, void *data);
+pecoff_read_header(PE_COFF_LOADER_IMAGE_CONTEXT *context, void *data,
+		   UINTN size);
 EFI_STATUS
 pecoff_relocate(PE_COFF_LOADER_IMAGE_CONTEXT *context, void **data);
 EFI_STATUS

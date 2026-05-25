@@ -172,7 +172,7 @@ pkcs7verify_allow(VOID *data, UINTN len)
 	EFI_STATUS status;
 	int i;
 
-	status = pecoff_read_header(&context, data);
+	status = pecoff_read_header(&context, data, len);
 	if (status != EFI_SUCCESS)
 		goto out;
 

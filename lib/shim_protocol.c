@@ -13,7 +13,7 @@
 static EFI_STATUS shimprotocol_context(void *data, unsigned int size,
 				       PE_COFF_LOADER_IMAGE_CONTEXT *context)
 {
-	return pecoff_read_header(context, data);
+	return pecoff_read_header(context, data, size);
 }
 
 static EFI_STATUS shimprotocol_verify(void *buffer, UINT32 size)
