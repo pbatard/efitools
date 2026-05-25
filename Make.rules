@@ -1,6 +1,7 @@
 EFISIGNED = $(patsubst %.efi,%-signed.efi,$(EFIFILES))
 MANPAGES = $(patsubst doc/%.1.in,doc/%.1,$(wildcard doc/*.1.in))
 HELP2MAN = help2man
+PKG_CONFIG ?= pkg-config
 ARCH	 = $(shell uname -m | sed 's/i.86/ia32/;s/arm.*/arm/')
 ifeq ($(ARCH),ia32)
 ARCH3264 = -m32
@@ -22,7 +23,7 @@ CPPFLAGS   = -DCONFIG_$(ARCH)
 CFLAGS	   = -O2 -g $(ARCH3264) -fno-stack-protector -fpic -Wall -fshort-wchar -fno-strict-aliasing -fno-merge-constants -D_XOPEN_SOURCE=700
 LDFLAGS	   = -nostdlib
 CRTOBJ		= crt0-efi-$(ARCH).o
-CRTPATHS	= /lib /lib64 /lib/efi /lib64/efi /usr/lib /usr/lib64 /usr/lib/efi /usr/lib64/efi /usr/lib/gnuefi /usr/lib64/gnuefi
+CRTPATHS	= /lib /lib64 /lib/efi /lib64/efi /usr/lib /usr/lib64 /usr/lib/efi /usr/lib64/efi /usr/lib/gnuefi /usr/lib64/gnuefi $(shell $(PKG_CONFIG) --variable=libdir gnu-efi)
 CRTPATH		= $(shell for f in $(CRTPATHS); do if [ -e $$f/$(CRTOBJ) ]; then echo $$f; break; fi; done)
 CRTOBJS		= $(CRTPATH)/$(CRTOBJ)
 # there's a bug in the gnu tools ... the .reloc section has to be
