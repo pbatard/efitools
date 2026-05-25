@@ -278,18 +278,18 @@ show_key(int key, int offset, void *Data, int DataSize)
 	title[c] = L"Unknown";
 	
 	for (i = 0; i < signatures_size; i++) {
-		if (CompareGuid(signatures[i].guid, &CertList->SignatureType) == 0) {
+		if (CompareGuid(signatures[i].guid, &CertList->SignatureType)) {
 			SPrint(str1, sizeof(str1), L"Type: %s", signatures[i].name);
 			title[c] = str1;
 			break;
 		}
 	}
 	CHAR16 buf[1024], buf1[1024], *tmpbuf[10], *tmpbuf1[10];
-	if (CompareGuid(&CertList->SignatureType, &EFI_CERT_SHA256_GUID) == 0) {
+	if (CompareGuid(&CertList->SignatureType, &EFI_CERT_SHA256_GUID)) {
 		StrCpy(str2, L"Hash: ");
 		sha256_StrCat_hash(str2, Cert->SignatureData);
 		title[++c] = str2;
-	} else if (CompareGuid(&CertList->SignatureType, &X509_GUID) == 0) {
+	} else if (CompareGuid(&CertList->SignatureType, &X509_GUID)) {
 
 		x509_to_str(Cert->SignatureData,
 			    CertList->SignatureSize,
@@ -313,7 +313,7 @@ show_key(int key, int offset, void *Data, int DataSize)
 		title[++c] = L"Issuer:";
 		for (i = 0; i < sp; i++)
 			title[++c] = tmpbuf1[i];
-	} else if (CompareGuid(&CertList->SignatureType, &EFI_CERT_X509_SHA256_GUID) == 0) {
+	} else if (CompareGuid(&CertList->SignatureType, &EFI_CERT_X509_SHA256_GUID)) {
 		EFI_CERT_X509_SHA256 *tmp = (void *)Cert->SignatureData;
 		StrCpy(str2, L"Hash: ");
 		sha256_StrCat_hash(str2, Cert->SignatureData);

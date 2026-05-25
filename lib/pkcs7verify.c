@@ -86,7 +86,7 @@ pkcs7verify_is_hash_present(CHAR16 *var, EFI_GUID owner, VOID *data, UINTN len)
 		goto out;
 
 	for (i = 0; i < count; i++) {
-		if (CompareGuid(hashes[i], &EFI_CERT_SHA256_GUID) == 0) {
+		if (CompareGuid(hashes[i], &EFI_CERT_SHA256_GUID)) {
 			hash = AllocatePool(SHA256_DIGEST_SIZE);
 			if (!hash)
 				goto out;

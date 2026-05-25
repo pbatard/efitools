@@ -32,13 +32,13 @@ parse_db(UINT8 *data, UINTN len, EFI_HANDLE image, CHAR16 *name, int save_file)
 		int Index = 0;
 		count++;
 
-		if (CompareGuid(&CertList->SignatureType, &X509_GUID) == 0) {
+		if (CompareGuid(&CertList->SignatureType, &X509_GUID)) {
 			ext = L"X509";
-		} else if (CompareGuid(&CertList->SignatureType, &RSA2048_GUID) == 0) {
+		} else if (CompareGuid(&CertList->SignatureType, &RSA2048_GUID)) {
 			ext = L"RSA2048";
-		} else if (CompareGuid(&CertList->SignatureType, &PKCS7_GUID) == 0) {
+		} else if (CompareGuid(&CertList->SignatureType, &PKCS7_GUID)) {
 			ext = L"PKCS7";
-		} else if (CompareGuid(&CertList->SignatureType, &EFI_CERT_SHA256_GUID) == 0) {
+		} else if (CompareGuid(&CertList->SignatureType, &EFI_CERT_SHA256_GUID)) {
 			ext = L"SHA256";
 		} else {
 			ext = L"Unknown";

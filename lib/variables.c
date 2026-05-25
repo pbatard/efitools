@@ -288,12 +288,12 @@ hashes_in_esl(UINT8 *Data, UINTN DataSize, EFI_GUID *hashes[])
 		int i;
 
 		for (i = 0; i < count; i++) {
-			if (CompareGuid(&CertList->SignatureType, hashes[i]) == 0)
+			if (CompareGuid(&CertList->SignatureType, hashes[i]))
 			    goto found_skip;
 		}
 
 		for (i = 0; i < allowed_hashes_size; i++) {
-			if (CompareGuid(&CertList->SignatureType, allowed_hashes[i]) == 0)
+			if (CompareGuid(&CertList->SignatureType, allowed_hashes[i]))
 				goto found;
 		}
 	found_skip:
@@ -372,7 +372,7 @@ variable_enroll_hash(CHAR16 *var, EFI_GUID owner,
 	CopyMem(&d->SignatureData, hash, SHA256_DIGEST_SIZE);
 	d->SignatureOwner = MOK_OWNER;
 
-	if (CompareGuid(&owner, &SIG_DB) == 0)
+	if (CompareGuid(&owner, &SIG_DB))
 		status = SetSecureVariable(var, sig, sizeof(sig), owner,
 					   EFI_VARIABLE_APPEND_WRITE, 0);
 	else
