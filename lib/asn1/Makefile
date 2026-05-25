@@ -3,6 +3,7 @@ LIBFILES = asn1.o asn1_parser.o enumerator.o chunk.o oid.o identification.o \
 EFILIBFILES = $(patsubst %.o,%.efi.o,$(LIBFILES))
 
 include ../../Make.rules
+CFLAGS	+= -Wno-pointer-sign -Wno-unused-const-variable
 
 libasn1.a: $(LIBFILES)
 libasn1-efi.a: $(EFILIBFILES)

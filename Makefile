@@ -1,5 +1,7 @@
 EFIFILES = HelloWorld.efi LockDown.efi Loader.efi ReadVars.efi UpdateVars.efi \
 	KeyTool.efi HashTool.efi SetNull.efi ShimReplace.efi
+EFILIBS = gnu-efi/$(ARCH)/lib/libefi.a gnu-efi/$(ARCH)/gnuefi/libgnuefi.a \
+	lib/asn1/libasn1-efi.a lib/lib-efi.a
 BINARIES = cert-to-efi-sig-list sig-list-to-certs sign-efi-sig-list \
 	hash-to-efi-sig-list efi-readvar efi-updatevar cert-to-efi-hash-list \
 	flash-var
@@ -30,26 +32,27 @@ include Make.rules
 
 EFISIGNED = $(patsubst %.efi,%-signed.efi,$(EFIFILES))
 
-ifneq (,(filter $(ARCH),aarch64 riscv64))
-all: $(BINARIES) $(MANPAGES) noPK.auth $(KEYAUTH) \
-	$(KEYUPDATEAUTH) $(KEYBLACKLISTAUTH) $(KEYHASHBLACKLISTAUTH)
-else
 all: $(EFISIGNED) $(BINARIES) $(MANPAGES) noPK.auth $(KEYAUTH) \
 	$(KEYUPDATEAUTH) $(KEYBLACKLISTAUTH) $(KEYHASHBLACKLISTAUTH)
-endif
+
+# Don't build files that contain private data when publishing EFI binaries
+efi: $(filter-out LockDown.efi PreLoader.efi,$(EFIFILES))
 
 install: all
 	$(INSTALL) -m 755 -d $(MANDIR)
 	$(INSTALL) -m 644 $(MANPAGES) $(MANDIR)
-ifeq (,(filter $(ARCH),aarch64 riscv64))
 	$(INSTALL) -m 755 -d $(EFIDIR)
 	$(INSTALL) -m 755 $(EFIFILES) $(EFIDIR)
-endif
 	$(INSTALL) -m 755 -d $(BINDIR)
 	$(INSTALL) -m 755 $(BINARIES) $(BINDIR)
 	$(INSTALL) -m 755 mkusb.sh $(BINDIR)/efitool-mkusb
 	$(INSTALL) -m 755 -d $(DOCDIR)
 	$(INSTALL) -m 644 README COPYING $(DOCDIR)
+
+gnu-efi/$(ARCH)/gnuefi/libgnuefi.a gnu-efi/$(ARCH)/lib/libefi.a:
+	@mkdir -p gnu-efi/lib gnu-efi/gnuefi
+	$(MAKE) -C gnu-efi CC="$(CC)" TOPDIR=$(TOPDIR)/gnu-efi CFLAGS="$(CFLAGS) -fshort-wchar" \
+		-f $(TOPDIR)/gnu-efi/Makefile lib gnuefi inc
 
 lib/lib.a lib/lib-efi.a: FORCE
 	$(MAKE) -C lib $(notdir $@)
@@ -86,15 +89,15 @@ hashlist.h: HashTool.hash
 	rm -f /tmp/tmp.hash
 
 
-Loader.so: lib/lib-efi.a
-ReadVars.so: lib/lib-efi.a lib/asn1/libasn1-efi.a
-UpdateVars.so: lib/lib-efi.a
-LockDown.so: lib/lib-efi.a
-KeyTool.so: lib/lib-efi.a lib/asn1/libasn1-efi.a
-HashTool.so: lib/lib-efi.a
-PreLoader.so: lib/lib-efi.a
-HelloWorld.so: lib/lib-efi.a
-ShimReplace.so: lib/lib-efi.a
+Loader.so: $(EFILIBS)
+ReadVars.so: $(EFILIBS)
+UpdateVars.so: $(EFILIBS)
+LockDown.so: $(EFILIBS)
+KeyTool.so: $(EFILIBS)
+HashTool.so: $(EFILIBS)
+PreLoader.so: $(EFILIBS)
+HelloWorld.so: $(EFILIBS)
+ShimReplace.so: $(EFILIBS)
 
 cert-to-efi-sig-list: cert-to-efi-sig-list.o lib/lib.a
 	$(CC) $(ARCH3264) -o $@ $< $(OLD_CFLAGS) $(OLD_LDFLAGS) lib/lib.a -lcrypto
@@ -123,7 +126,12 @@ efi-updatevar: efi-updatevar.o lib/lib.a
 flash-var: flash-var.o lib/lib.a
 	$(CC) $(ARCH3264) -o $@ $< $(OLD_CFLAGS) $(OLD_LDFLAGS) lib/lib.a
 
-clean:
+clean-gnu-efi:
+	@if [ -d gnu-efi ] ; then \
+		$(MAKE) -C gnu-efi CC="$(CC)" HOSTCC="$(HOSTCC)" TOPDIR=$(TOPDIR)/gnu-efi -f $(TOPDIR)/gnu-efi/Makefile clean ; \
+	fi
+
+clean: clean-gnu-efi
 	rm -f PK.* KEK.* DB.* $(EFIFILES) $(EFISIGNED) $(BINARIES) *.o *.so
 	rm -f noPK.*
 	rm -f doc/*.1
@@ -131,6 +139,3 @@ clean:
 	$(MAKE) -C lib/asn1 clean
 
 FORCE:
-
-
-

@@ -18,18 +18,17 @@ ARCH3264 =
 else
 $(error unknown architecture $(ARCH))
 endif
-INCDIR	   = -I$(TOPDIR)include/ -I/usr/include/efi -I/usr/include/efi/$(ARCH) -I/usr/include/efi/protocol
-CPPFLAGS   = -DCONFIG_$(ARCH)
-CFLAGS	   = -O2 -g $(ARCH3264) -fno-stack-protector -fpic -Wall -fshort-wchar -fno-strict-aliasing -fno-merge-constants -D_XOPEN_SOURCE=700
-LDFLAGS	   = -nostdlib
-CRTOBJ		= crt0-efi-$(ARCH).o
-CRTPATHS	= /lib /lib64 /lib/efi /lib64/efi /usr/lib /usr/lib64 /usr/lib/efi /usr/lib64/efi /usr/lib/gnuefi /usr/lib64/gnuefi $(shell $(PKG_CONFIG) --variable=libdir gnu-efi)
-CRTPATH		= $(shell for f in $(CRTPATHS); do if [ -e $$f/$(CRTOBJ) ]; then echo $$f; break; fi; done)
-CRTOBJS		= $(CRTPATH)/$(CRTOBJ)
+GEDIR		= $(TOPDIR)/gnu-efi
+INCDIR		= -I$(TOPDIR)/include -I$(GEDIR)/inc -I$(GEDIR)/inc/$(ARCH) -I$(GEDIR)/inc/protocol
+CPPFLAGS	= -DCONFIG_$(ARCH)
+CFLAGS		= -O2 -g $(ARCH3264) -fno-stack-protector -fPIC -fPIE -Wall -fshort-wchar -fno-strict-aliasing
+CFLAGS		+= -fno-merge-constants -ffreestanding -fno-stack-check -D__KERNEL__ -D_XOPEN_SOURCE=700
+LDFLAGS		= -nostdlib -pie -z norelro -z nocombreloc --no-dynamic-linker
+CRTOBJ		= $(GEDIR)/$(ARCH)/gnuefi/crt0-efi-$(ARCH).o
 # there's a bug in the gnu tools ... the .reloc section has to be
 # aligned otherwise the file alignment gets screwed up
 LDSCRIPT	= elf_$(ARCH)_efi.lds
-LDFLAGS		+= -shared -Bsymbolic $(CRTOBJS) -L $(CRTPATH) -L /usr/lib -L /usr/lib64 -T $(LDSCRIPT)
+LDFLAGS		+= -shared -Bsymbolic $(CRTOBJ) -L$(GEDIR)/$(ARCH)/lib -L$(GEDIR)/$(ARCH)/gnuefi -T $(GEDIR)/gnuefi/elf_$(ARCH)_efi.lds
 LOADLIBES	= -lefi -lgnuefi $(shell $(CC) $(ARCH3264) -print-libgcc-file-name)
 FORMAT		= --output-target=efi-app-$(ARCH)
 OBJCOPY		= objcopy
@@ -39,16 +38,20 @@ BINDIR		= $(DESTDIR)/usr/bin
 MANDIR		= $(DESTDIR)/usr/share/man/man1
 EFIDIR		= $(DESTDIR)/usr/share/efitools/efi
 DOCDIR		= $(DESTDIR)/usr/share/efitools
-
-# globally use EFI calling conventions (requires gcc >= 4.7)
-CFLAGS += -DGNU_EFI_USE_MS_ABI
+HOSTCC		:= $(prefix)gcc
+CC			:= $(prefix)$(CROSS_COMPILE)gcc
+AS			:= $(prefix)$(CROSS_COMPILE)as
+LD			:= $(prefix)$(CROSS_COMPILE)ld
+AR			:= $(prefix)$(CROSS_COMPILE)ar
+RANLIB		:= $(prefix)$(CROSS_COMPILE)ranlib
+OBJCOPY		:= $(prefix)$(CROSS_COMPILE)objcopy
 
 ifeq ($(ARCH),x86_64)
-  CFLAGS += -DEFI_FUNCTION_WRAPPER -mno-red-zone
+  CFLAGS += -DGNU_EFI_USE_MS_ABI -mno-red-zone
 endif
 
 ifeq ($(ARCH),ia32)
-  CFLAGS += -mno-red-zone
+  CFLAGS += -DGNU_EFI_USE_MS_ABI -mno-red-zone
 endif
 
 ifeq ($(ARCH),arm)
@@ -58,22 +61,24 @@ endif
 
 ifeq ($(ARCH),aarch64)
   LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
-  FORMAT = -O binary
+  FORMAT = -O efi-app-aarch64
 endif
 
 ifeq ($(ARCH),riscv64)
   LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
-  FORMAT = -O binary
+  FORMAT = -O efi-app-riscv64
 endif
 
 ifeq ($(ARCH),loongarch64)
   LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
+  FORMAT = -O efi-app-loongarch64
 endif
 
 %.efi: %.so
-	$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym \
+	$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .rodata \
 		   -j .rel -j .rela -j .rel.* -j .rela.* -j .rel* -j .rela* \
-		   -j .reloc $(FORMAT) $*.so $@
+		   -j .areloc -j .reloc $(FORMAT) $*.so $@
+
 %.so: %.o
 	$(LD) $(LDFLAGS) $^ -o $@ $(LOADLIBES)
 	# check we have no undefined symbols
