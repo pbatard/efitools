@@ -48,13 +48,13 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	if (efi_status != EFI_SUCCESS)
 		console_error(L"Failed to locate shim protocol", efi_status);
 
-	efi_status = execute(image, loader);
+	efi_status = execute(image, (CHAR16*)loader);
 	if (efi_status == EFI_SUCCESS)
 		return efi_status;
 
 	console_error(L"Failed to start primary loader", efi_status);
 
-	efi_status = execute(image, fallback);
+	efi_status = execute(image, (CHAR16*)fallback);
 
 	if (efi_status != EFI_SUCCESS)
 		console_error(L"Failed to start fallback loader", efi_status);

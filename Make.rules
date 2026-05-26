@@ -60,10 +60,11 @@ ifeq ($(ARCH),x86_64)
 endif
 
 ifeq ($(ARCH),ia32)
-  CFLAGS += -DGNU_EFI_USE_MS_ABI -mno-red-zone
+  CFLAGS += -DGNU_EFI_USE_MS_ABI -mno-red-zone -Wno-pointer-to-int-cast
 endif
 
 ifeq ($(ARCH),arm)
+  CFLAGS += -Wno-pointer-to-int-cast
   LDFLAGS += --defsym=EFI_SUBSYSTEM=0x0a
   FORMAT = -O binary
 endif

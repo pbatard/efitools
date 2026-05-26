@@ -79,7 +79,6 @@ METHOD(asn1_parser_t, iterate, bool,
 {
 	chunk_t *blob, *blob1;
 	u_char *start_ptr;
-	u_int level;
 	asn1Object_t obj;
 
 	*object = chunk_empty;
@@ -107,7 +106,6 @@ METHOD(asn1_parser_t, iterate, bool,
 		}
 	}
 
-	level = this->level0 + obj.level;
 	blob = this->blobs + obj.level;
 	blob1 = blob + 1;
 	start_ptr = blob->ptr;

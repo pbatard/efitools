@@ -21,7 +21,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
 	EFI_STATUS status;
 	int argc, i, esl_mode = 0, hash_mode = 0;
-	CHAR16 **ARGV, *var, *name, *progname, *owner_guid;
+	CHAR16 **ARGV, *var, *name, *progname;
 	EFI_FILE *file;
 	void *buf;
 	UINTN size, options = 0;
@@ -56,10 +56,6 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 			options |= EFI_VARIABLE_APPEND_WRITE;
 			ARGV += 1;
 			argc -= 1;
-		} else if (StrCmp(ARGV[1], L"-g") == 0) {
-			owner_guid = ARGV[2];
-			ARGV += 2;
-			argc -= 2;
 		} else if (StrCmp(ARGV[1], L"-e") == 0) {
 			esl_mode = 1;
 			ARGV += 1;
@@ -76,14 +72,14 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	}
 
 	if (argc != 3 ) {
-		Print(L"Usage: %s: [-g guid] [-a] [-e] [-b] var file\n", progname);
+		Print(L"Usage: %s: [-a] [-e] [-b] var file\n", progname);
 		return EFI_INVALID_PARAMETER;
 	}
 
 	var = ARGV[1];
 	name = ARGV[2];
 
-	for(i = 0; variables[i] != NULL; i++) {
+	for (i = 0; variables[i] != NULL; i++) {
 		if (StrCmp(var, variables[i]) == 0) {
 			owner = owners[i];
 			break;

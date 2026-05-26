@@ -21,7 +21,6 @@ static CHAR16* keytoolbin = L"KeyTool.efi";
 static int transition_to_setup = 0, reboot_to_uefi_menu = 0;
 static EFI_HANDLE im;
 
-#if 0
 /* some UEFI machines have a buggy implementation
  * see if we can tip the system into Setup Mode */
 static EFI_STATUS
@@ -53,7 +52,6 @@ change_setup_mode(int user_mode)
 	}
 
 }
-#endif
 
 static void
 enroll_hash(void)
@@ -165,7 +163,6 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	if (indications & EFI_OS_INDICATIONS_BOOT_TO_FW_UI)
 		reboot_to_uefi_menu = 1;
 
-#if 0
 	/*
 	 * Microsoft objects to this code.  What it does is test to see
 	 * if the platform key is removable and offer a menu item to 
@@ -177,7 +174,6 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 			change_setup_mode(1);
 		}
 	}
-#endif
 
 	for (;;) {
 
@@ -239,10 +235,8 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 			status = execute(image, keytoolbin);
 			if (status != EFI_SUCCESS)
 				console_error(L"Failed to execute KeyTool", status);
-#if 0
 		} else if (option == setup_mode) {
 			change_setup_mode(setup_mode_arg);
-#endif
 		} else if (option == uefi_reboot) {
 			transition_to_uefi_menu();
 		} else if (option == reboot) {

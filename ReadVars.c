@@ -99,7 +99,7 @@ EFI_STATUS
 efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
 	EFI_STATUS status;
-	CHAR16 **variables;
+	static CHAR16 **variables;
 	EFI_GUID *owners;
 	CHAR16 **ARGV, *progname;
 	UINT8 *data;
