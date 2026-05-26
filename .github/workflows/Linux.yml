@@ -1,0 +1,103 @@
+name: EFI build
+
+on:
+  workflow_dispatch:
+    branches: [master]
+  push:
+    branches: [master]
+    tags:
+      - '**'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        TARGET_TYPE: [ia32, x64, aa64, arm, riscv64, loongarch64]
+        include:
+        - TARGET_TYPE: x64
+          TARGET_ARCH: x86_64
+          TARGET_PKGS: gcc-multilib
+          TARGET_COMP:
+        - TARGET_TYPE: ia32
+          TARGET_ARCH: ia32
+          TARGET_PKGS: gcc-multilib
+          TARGET_COMP:
+        - TARGET_TYPE: aa64
+          TARGET_ARCH: aarch64
+          TARGET_PKGS: libc6-dev-arm64-cross gcc-aarch64-linux-gnu
+          TARGET_COMP: aarch64-linux-gnu-
+        - TARGET_TYPE: arm
+          TARGET_ARCH: arm
+          TARGET_PKGS: libc6-dev-armhf-cross gcc-arm-linux-gnueabihf
+          TARGET_COMP: arm-linux-gnueabihf-
+        - TARGET_TYPE: riscv64
+          TARGET_ARCH: riscv64
+          TARGET_PKGS: libc6-dev-riscv64-cross binutils-riscv64-linux-gnu gcc-riscv64-linux-gnu
+          TARGET_COMP: riscv64-linux-gnu-
+        - TARGET_TYPE: loongarch64
+          TARGET_ARCH: loongarch64
+          TARGET_PKGS: libc6-dev
+          TARGET_COMP: loongarch64-unknown-linux-gnu-
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Set up Linux environment
+      run: |
+        sudo apt-get update
+        sudo apt-get -y --no-install-recommends install ${{ matrix.TARGET_PKGS }}
+        if [[ "${{ matrix.TARGET_ARCH }}" == "loongarch64" ]]; then
+          curl -L -O https://github.com/loongson/build-tools/releases/download/2025.08.08/x86_64-cross-tools-loongarch64-binutils_2.45-gcc_15.1.0-glibc_2.42.tar.xz
+          tar -xJf x86_64-cross-tools-loongarch64-binutils_2.45-gcc_15.1.0-glibc_2.42.tar.xz
+          echo "$PWD/cross-tools/bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: Build EFI applications
+      run: make ARCH=${{ matrix.TARGET_ARCH }} CROSS_COMPILE=${{ matrix.TARGET_COMP }} efi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ matrix.TARGET_TYPE }}.zip
+        path: ./*.efi
+
+    - name: Display SHA-256
+      run: sha256sum ./*.efi
+
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Set version
+      id: set_version
+      run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+      with:
+        skip-decompress: true
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v3
+      with:
+        token: ${{secrets.GITHUB_TOKEN}}
+        name: efitools ${{ steps.set_version.outputs.version }}
+        files: ./*/*.zip
