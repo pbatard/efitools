@@ -46,6 +46,15 @@ AR			:= $(prefix)$(CROSS_COMPILE)ar
 RANLIB		:= $(prefix)$(CROSS_COMPILE)ranlib
 OBJCOPY		:= $(prefix)$(CROSS_COMPILE)objcopy
 
+# Set verbose or nonverbose output similarly to automake's silent rules.
+ifneq ($(V),1)
+  HIDE=@
+  ECHO=echo
+else
+  HIDE=
+  ECHO=true
+endif
+
 ifeq ($(ARCH),x86_64)
   CFLAGS += -DGNU_EFI_USE_MS_ABI -mno-red-zone
 endif
@@ -75,14 +84,15 @@ ifeq ($(ARCH),loongarch64)
 endif
 
 %.efi: %.so
-	$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .rodata \
+	@$(ECHO) "  OBJCOPY  $(notdir $@)"
+	$(HIDE)$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .rodata \
 		   -j .rel -j .rela -j .rel.* -j .rela.* -j .rel* -j .rela* \
 		   -j .areloc -j .reloc $(FORMAT) $*.so $@
 
 %.so: %.o
-	$(LD) $(LDFLAGS) $^ -o $@ $(LOADLIBES)
-	# check we have no undefined symbols
-	nm -D $@ | grep ' U ' && exit 1 || exit 0
+	@$(ECHO) "  LD       $(notdir $@)"
+	$(HIDE)$(LD) $(LDFLAGS) $^ -o $@ $(LOADLIBES)
+	$(HIDE)nm -D $@ | grep ' U ' && exit 1 || exit 0
 
 %.h: %.auth
 	./xxdi.pl $< > $@
@@ -118,13 +128,16 @@ getvar = $(shell if [ "$(1)" = "PK" -o "$(1)" = "KEK" ]; then echo $(1); else ec
 	./sign-efi-sig-list -a -c PK.crt -k PK.key dbx $< $@
 
 %.o: %.c
-	$(CC) $(INCDIR) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	@$(ECHO) "  CC       $(notdir $@)"
+	$(HIDE)$(CC) $(INCDIR) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 %.efi.o: %.c
-	$(CC) $(INCDIR) $(CFLAGS) $(CPPFLAGS) -fno-toplevel-reorder -DBUILD_EFI -c $< -o $@
+	@$(ECHO) "  CC       $(notdir $@)"
+	$(HIDE)$(CC) $(INCDIR) $(CFLAGS) $(CPPFLAGS) -fno-toplevel-reorder -DBUILD_EFI -c $< -o $@
 
 %.efi.s: %.c
-	$(CC) -S $(INCDIR) $(CFLAGS) $(CPPFLAGS) -fno-toplevel-reorder -DBUILD_EFI -c $< -o $@
+	@$(ECHO) "  CC       $(notdir $@)"
+	$(HIDE)$(CC) -S $(INCDIR) $(CFLAGS) $(CPPFLAGS) -fno-toplevel-reorder -DBUILD_EFI -c $< -o $@
 
 %.crt:
 	openssl req -new -x509 -newkey rsa:2048 -subj "/CN=$*/" -keyout $*.key -out $@ -days 3650 -nodes -sha256
@@ -148,7 +161,8 @@ getvar = $(shell if [ "$(1)" = "PK" -o "$(1)" = "KEK" ]; then echo $(1); else ec
 #	sbsign --key KEK.key --cert KEK.crt --output $@ $<
 
 %.a:
-	ar rcv $@ $^
+	@$(ECHO) "  AR       $(notdir $@)"
+	$(HIDE)$(AR) rc $@ $^
 
 doc/%.1: doc/%.1.in %
 	$(HELP2MAN) --no-info -i $< -o $@ ./$*
