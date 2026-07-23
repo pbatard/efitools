@@ -7,7 +7,9 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/sha.h>
-#include <openssl/engine.h>
+#include <openssl/provider.h>
+#include <openssl/store.h>
+#include <openssl/ui.h>
 
 #include <openssl_sign.h>
 
@@ -103,46 +105,61 @@ static int ui_read(UI *ui, UI_STRING *uis)
 	if (UI_get_string_type(uis) != UIT_PROMPT)
 		return 0;
 
-	EVP_read_pw_string(password, sizeof(password), "Enter engine key pass phrase:", 0);
+	EVP_read_pw_string(password, sizeof(password), "Enter provider key pass phrase:", 0);
 	UI_set_result(ui, uis, password);
 	return 1;
 }
 
 static EVP_PKEY *
-read_engine_private_key(char *engine, char *keyfile)
+read_provider_private_key(char *provider_name, char *keyfile)
 {
-	UI_METHOD *ui;
-	ENGINE *e;
+	OSSL_PROVIDER *prov;
+	OSSL_STORE_CTX *store_ctx;
+	OSSL_STORE_INFO *info;
 	EVP_PKEY *pkey = NULL;
+	UI_METHOD *ui;
 
-	ENGINE_load_builtin_engines();
-	e = ENGINE_by_id(engine);
-
-	if (!e) {
-		fprintf(stderr, "Failed to load engine: %s\n", engine);
+	prov = OSSL_PROVIDER_load(NULL, provider_name);
+	if (!prov) {
+		fprintf(stderr, "Failed to load provider: %s\n", provider_name);
 		ERR_print_errors_fp(stderr);
 		return NULL;
 	}
 
-	ui = UI_create_method("sbsigntools");
+	ui = UI_create_method("efitools");
 	if (!ui) {
 		fprintf(stderr, "Failed to create UI method\n");
 		ERR_print_errors_fp(stderr);
-		goto out_free;
+		goto out_unload;
 	}
 	UI_method_set_reader(ui, ui_read);
 
-	if (!ENGINE_init(e)) {
-		fprintf(stderr, "Failed to initialize engine %s\n", engine);
+	store_ctx = OSSL_STORE_open(keyfile, ui, NULL, NULL, NULL);
+	if (!store_ctx) {
+		fprintf(stderr, "Failed to open key store for: %s\n", keyfile);
 		ERR_print_errors_fp(stderr);
-		goto out_free;
+		goto out_free_ui;
 	}
 
-	pkey = ENGINE_load_private_key(e, keyfile, ui, NULL);
-	ENGINE_finish(e);
+	while (!OSSL_STORE_eof(store_ctx)) {
+		info = OSSL_STORE_load(store_ctx);
+		if (!info)
+			break;
+		if (OSSL_STORE_INFO_get_type(info) == OSSL_STORE_INFO_PKEY) {
+			pkey = OSSL_STORE_INFO_get1_PKEY(info);
+			OSSL_STORE_INFO_free(info);
+			break;
+		}
+		OSSL_STORE_INFO_free(info);
+	}
+	OSSL_STORE_close(store_ctx);
 
- out_free:
-	ENGINE_free(e);
+ out_free_ui:
+	UI_destroy_method(ui);
+ out_unload:
+	if (!pkey)
+		OSSL_PROVIDER_unload(prov);
+	/* Provider stays loaded while pkey is in use; freed on process exit */
 	return pkey;
 }
 
@@ -150,7 +167,7 @@ EVP_PKEY *
 read_private_key(char *engine, char *keyfile)
 {
 	if (engine)
-		return read_engine_private_key(engine, keyfile);
+		return read_provider_private_key(engine, keyfile);
 	else
 		return read_pem_private_key(keyfile);
 }
