@@ -16,6 +16,54 @@
 #include <sha256.h>
 #include "efiauthenticated.h"
 
+#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
+
+enum {
+	KEY_PK = 0,
+	KEY_KEK,
+	KEY_DB,
+	KEY_DBX,
+	KEY_DBT,
+	KEY_MOK,
+	KEY_MOKX,
+	MAX_KEYS
+};
+
+static struct {
+	CHAR16 *name;
+	EFI_GUID *guid;
+} keyinfo[] = {
+	[KEY_PK] = {
+		.name = L"PK",
+		.guid = &GV_GUID,
+	},
+	[KEY_KEK] = {
+		.name = L"KEK",
+		.guid = &GV_GUID,
+	},
+	[KEY_DB] = {
+		.name = L"db",
+		.guid = &SIG_DB,
+	},
+	[KEY_DBX] = {
+		.name = L"dbx",
+		.guid = &SIG_DB,
+	},
+	[KEY_DBT] = {
+		.name = L"dbt",
+		.guid = &SIG_DB,
+	},
+	[KEY_MOK] = {
+		.name = L"MokList",
+		.guid = &MOK_OWNER,
+	},
+	[KEY_MOKX] = {
+		.name = L"MokListX",
+		.guid = &MOK_OWNER,
+	}
+};
+static const int keyinfo_size = ARRAY_SIZE(keyinfo);
+
 void
 parse_db(UINT8 *data, UINTN len, EFI_HANDLE image, CHAR16 *name, int save_file)
 {
@@ -99,26 +147,15 @@ EFI_STATUS
 efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
 	EFI_STATUS status;
-	static CHAR16 **variables;
-	EFI_GUID *owners;
 	CHAR16 **ARGV, *progname;
 	UINT8 *data;
 	UINTN len;
-	int i, argc, save_keys = 0, no_print = 0;
+	int i, argc, save_keys = 0, no_print = 0, has_dbt = 0;
 
 	InitializeLib(image, systab);
 
-	if (GetOSIndications() & EFI_OS_INDICATIONS_TIMESTAMP_REVOCATION) {
-		variables = (CHAR16 *[]){ L"PK", L"KEK", L"db", L"dbx", L"dbt",
-					  L"MokList", L"MokListX", NULL};
-		owners = (EFI_GUID []){ GV_GUID, GV_GUID, SIG_DB, SIG_DB,
-					SIG_DB, MOK_OWNER, MOK_OWNER };
-	} else {
-		variables = (CHAR16 *[]){ L"PK", L"KEK", L"db", L"dbx",
-					  L"MokList", L"MokListX", NULL};
-		owners = (EFI_GUID []){ GV_GUID, GV_GUID, SIG_DB, SIG_DB,
-					MOK_OWNER, MOK_OWNER };
-	}
+	if (GetOSIndications() & EFI_OS_INDICATIONS_TIMESTAMP_REVOCATION)
+		has_dbt = 1;
 
 	status = argsplit(image, &argc, &ARGV);
 
@@ -149,43 +186,50 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	}
 
 	if (argc == 1) {
-		for (i = 0; variables[i] != NULL; i++) {
-			status = get_variable(variables[i], &data, &len, owners[i]);
+		for (i = 0; i < keyinfo_size; i++) {
+			if (!has_dbt && i == KEY_DBT)
+				continue;
+			status = get_variable(keyinfo[i].name, &data, &len, *keyinfo[i].guid);
 			if (status == EFI_NOT_FOUND) {
-				Print(L"Variable %s has no entries\n", variables[i]);
+				Print(L"Variable %s has no entries\n", keyinfo[i].name);
 			} else if (status != EFI_SUCCESS) {
-				Print(L"Failed to get %s: %d\n", variables[i], status);
+				Print(L"Failed to get %s: %d\n", keyinfo[i].name, status);
 			} else {
-				Print(L"Variable %s length %d\n", variables[i], len);
-				parse_db(data, len, image, variables[i], save_keys);
+				Print(L"Variable %s length %d\n", keyinfo[i].name, len);
+				parse_db(data, len, image, keyinfo[i].name, save_keys);
 				FreePool(data);
 			}
 		}
 	} else {
 		CHAR16 *var = ARGV[1];
-		
-		for(i = 0; variables[i] != NULL; i++) {
-			if (StrCmp(var, variables[i]) == 0) {
+
+		for(i = 0; i < keyinfo_size; i++) {
+			if (!has_dbt && i == KEY_DBT)
+				continue;
+			if (StrCmp(var, keyinfo[i].name) == 0) {
 				break;
 			}
 		}
-		if (variables[i]== NULL) {
+		if (i >= keyinfo_size) {
 			Print(L"Invalid Variable %s\nVariable must be one of: ", var);
-			for (i = 0; variables[i] != NULL; i++)
-				Print(L"%s ", variables[i]);
+			for (i = 0; i < keyinfo_size; i++) {
+				if (!has_dbt && i == KEY_DBT)
+					continue;
+				Print(L"%s ", keyinfo[i].name);
+			}
 			Print(L"\n");
 			return EFI_INVALID_PARAMETER;
 		}
-		status = get_variable(variables[i], &data, &len, owners[i]);
+		status = get_variable(keyinfo[i].name, &data, &len, *keyinfo[i].guid);
 		if (status == EFI_NOT_FOUND) {
-			Print(L"Variable %s has no entries\n", variables[i]);
+			Print(L"Variable %s has no entries\n", keyinfo[i].name);
 		} else if (status != EFI_SUCCESS) {
-			Print(L"Failed to get %s: %d\n", variables[i], status);
+			Print(L"Failed to get %s: %d\n", keyinfo[i].name, status);
 		} else {
-			Print(L"Variable %s length %d\n", variables[i], len);
-			parse_db(data, len, image, variables[i], save_keys);
+			Print(L"Variable %s length %d\n", keyinfo[i].name, len);
+			parse_db(data, len, image, keyinfo[i].name, save_keys);
 			FreePool(data);
-			parse_db(data, len, image, variables[i], save_keys);
+			parse_db(data, len, image, keyinfo[i].name, save_keys);
 		}
 	}
 	return EFI_SUCCESS;

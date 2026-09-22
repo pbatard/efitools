@@ -16,32 +16,69 @@
 #include <shell.h>
 #include "efiauthenticated.h"
 
+#define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
+
+enum {
+	KEY_PK = 0,
+	KEY_KEK,
+	KEY_DB,
+	KEY_DBX,
+	KEY_DBT,
+	KEY_MOK,
+	KEY_MOKX,
+	MAX_KEYS
+};
+
+static struct {
+	CHAR16 *name;
+	EFI_GUID *guid;
+} keyinfo[] = {
+	[KEY_PK] = {
+		.name = L"PK",
+		.guid = &GV_GUID,
+	},
+	[KEY_KEK] = {
+		.name = L"KEK",
+		.guid = &GV_GUID,
+	},
+	[KEY_DB] = {
+		.name = L"db",
+		.guid = &SIG_DB,
+	},
+	[KEY_DBX] = {
+		.name = L"dbx",
+		.guid = &SIG_DB,
+	},
+	[KEY_DBT] = {
+		.name = L"dbt",
+		.guid = &SIG_DB,
+	},
+	[KEY_MOK] = {
+		.name = L"MokList",
+		.guid = &MOK_OWNER,
+	},
+	[KEY_MOKX] = {
+		.name = L"MokListX",
+		.guid = &MOK_OWNER,
+	}
+};
+static const int keyinfo_size = ARRAY_SIZE(keyinfo);
+
 EFI_STATUS
 efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
 	EFI_STATUS status;
-	int argc, i, esl_mode = 0, hash_mode = 0;
+	int argc, i, esl_mode = 0, hash_mode = 0, has_dbt = 0;
 	CHAR16 **ARGV, *var, *name, *progname;
 	EFI_FILE *file;
 	void *buf;
 	UINTN size, options = 0;
 	EFI_GUID *owner;
-	CHAR16 **variables;
-	EFI_GUID **owners;
 
 	InitializeLib(image, systab);
 
-	if (GetOSIndications() & EFI_OS_INDICATIONS_TIMESTAMP_REVOCATION) {
-		variables = (CHAR16 *[]){ L"PK", L"KEK", L"db", L"dbx", L"dbt",
-					  L"MokList", L"MokListX", NULL};
-		owners = (EFI_GUID *[]){ &GV_GUID, &GV_GUID, &SIG_DB, &SIG_DB,
-					 &SIG_DB, &MOK_OWNER, &MOK_OWNER };
-	} else {
-		variables = (CHAR16 *[]){ L"PK", L"KEK", L"db", L"dbx",
-					  L"MokList", L"MokListX", NULL};
-		owners = (EFI_GUID *[]){ &GV_GUID, &GV_GUID, &SIG_DB, &SIG_DB,
-					 &MOK_OWNER, &MOK_OWNER };
-	}
+	if (GetOSIndications() & EFI_OS_INDICATIONS_TIMESTAMP_REVOCATION)
+		has_dbt = 1;
 
 	status = argsplit(image, &argc, &ARGV);
 
@@ -79,16 +116,21 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	var = ARGV[1];
 	name = ARGV[2];
 
-	for (i = 0; variables[i] != NULL; i++) {
-		if (StrCmp(var, variables[i]) == 0) {
-			owner = owners[i];
+	for (i = 0; i < keyinfo_size; i++) {
+		if (!has_dbt && i == KEY_DBT)
+			continue;
+		if (StrCmp(var, keyinfo[i].name) == 0) {
+			owner = keyinfo[i].guid;
 			break;
 		}
 	}
-	if (variables[i] == NULL) {
+	if (i >= keyinfo_size) {
 		Print(L"Invalid Variable %s\nVariable must be one of: ", var);
-		for (i = 0; variables[i] != NULL; i++)
-			Print(L"%s ", variables[i]);
+		for (i = 0; i < keyinfo_size; i++) {
+			if (!has_dbt && i == KEY_DBT)
+				continue;
+			Print(L"%s ", keyinfo[i].name);
+		}
 		Print(L"\n");
 		return EFI_INVALID_PARAMETER;
 	}
