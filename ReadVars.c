@@ -127,13 +127,13 @@ parse_db(UINT8 *data, UINTN len, EFI_HANDLE image, CHAR16 *name, int save_file)
 				Print(L"Writing to file %s\n", buf);
 				status = simple_file_open(image, buf, &file, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE);
 				if (status != EFI_SUCCESS) {
-					Print(L"Failed to open file %s: %d\n", buf, status);
+					Print(L"Failed to open file %s: %r\n", buf, status);
 					continue;
 				}
 				status = simple_file_write_all(file, CertList->SignatureSize-sizeof(EFI_GUID), Cert->SignatureData);
 				simple_file_close(file);
 				if (status != EFI_SUCCESS) {
-					Print(L"Failed to write signature to file %s: %d\n", buf, status);
+					Print(L"Failed to write signature to file %s: %r\n", buf, status);
 					continue;
 				}
 			}
@@ -160,7 +160,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	status = argsplit(image, &argc, &ARGV);
 
 	if (status != EFI_SUCCESS) {
-		Print(L"Failed to parse arguments: %d\n", status);
+		Print(L"Failed to parse arguments: %r\n", status);
 		return status;
 	}
 
@@ -193,7 +193,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 			if (status == EFI_NOT_FOUND) {
 				Print(L"Variable %s has no entries\n", keyinfo[i].name);
 			} else if (status != EFI_SUCCESS) {
-				Print(L"Failed to get %s: %d\n", keyinfo[i].name, status);
+				Print(L"Failed to get %s: %r\n", keyinfo[i].name, status);
 			} else {
 				Print(L"Variable %s length %d\n", keyinfo[i].name, len);
 				parse_db(data, len, image, keyinfo[i].name, save_keys);
@@ -224,12 +224,11 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 		if (status == EFI_NOT_FOUND) {
 			Print(L"Variable %s has no entries\n", keyinfo[i].name);
 		} else if (status != EFI_SUCCESS) {
-			Print(L"Failed to get %s: %d\n", keyinfo[i].name, status);
+			Print(L"Failed to get %s: %r\n", keyinfo[i].name, status);
 		} else {
 			Print(L"Variable %s length %d\n", keyinfo[i].name, len);
 			parse_db(data, len, image, keyinfo[i].name, save_keys);
 			FreePool(data);
-			parse_db(data, len, image, keyinfo[i].name, save_keys);
 		}
 	}
 	return EFI_SUCCESS;

@@ -19,7 +19,7 @@ databases in a convenient manner, from the UEFI Shell, regardless of the OS they
 Currently, we provide builds of the efitools EFI utilities for:
 - x86 64-bit (`x64`)
 - x86 32-bit (`ia32`)
-- ARM 32-bit (`arm)
+- ARM 32-bit (`arm`)
 - ARM 64-bit (`aa64`)
 - RISC-V 64-bit (`riscv64`)
 - LoongArch 64-bit (`loongarch64`)
@@ -44,7 +44,7 @@ Then boot that media and invoke the utility of your choice from the Shell comman
 ## Compilation
 
 Whereas the non EFI utilities should also work, the goal of this project is to provide
-the EFi binaries so, once you have cloned the repository you should just be able to invoke
+the EFI binaries so, once you have cloned the repository you should just be able to invoke
 `make efi`.
 
 If cross compiling, you may also invoke one of:

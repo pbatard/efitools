@@ -3,7 +3,7 @@
  *
  * see COPYING file
  *
- * Update a secure varible when in secure mode
+ * Update a secure variable when in secure mode
  *
  * For instance append a signature to the KEK, db or dbx datbases
  */
@@ -83,7 +83,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	status = argsplit(image, &argc, &ARGV);
 
 	if (status != EFI_SUCCESS) {
-		Print(L"Failed to parse arguments: %d\n", status);
+		Print(L"Failed to parse arguments: %r\n", status);
 		return status;
 	}
 
@@ -137,7 +137,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 
 	if (owner == &MOK_OWNER) {
 		if (!esl_mode) {
-			Print(L"MoK variables can only be updated in ESL mode\n");
+			Print(L"MOK variables can only be updated in ESL mode\n");
 			return EFI_INVALID_PARAMETER;
 		}
 		/* hack: esl goes directly into MoK variables, so we now
@@ -184,7 +184,7 @@ efi_main (EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	}
 
 	if (status != EFI_SUCCESS) {
-		Print(L"Failed to update variable %s: %d\n", var, status);
+		Print(L"Failed to update variable %s: %r\n", var, status);
 		return status;
 	}
 	return EFI_SUCCESS;
