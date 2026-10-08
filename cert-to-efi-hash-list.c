@@ -131,8 +131,21 @@ main(int argc, char *argv[])
 	 * (malloc will cause other failures out lower down */
 	ERR_clear_error();
 
-        BIO *cert_bio = BIO_new_file(certfile, "r");
-        X509 *cert = PEM_read_bio_X509(cert_bio, NULL, NULL, NULL);
+
+	BIO *cert_bio = BIO_new_file(certfile, "r");
+	if (!cert_bio) {
+		fprintf(stderr, "failed to open certificate\n");
+		const char *error = ERR_error_string(ERR_get_error(), NULL);
+		if (error) fprintf(stderr, "%s\n", error);
+		exit(1);
+	}
+	X509 *cert = PEM_read_bio_X509(cert_bio, NULL, NULL, NULL);
+	if (!cert) {
+		fprintf(stderr, "failed to load certificate\n");
+		const char *error = ERR_error_string(ERR_get_error(), NULL);
+		if (error) fprintf(stderr, "%s\n", error);
+		exit(1);
+	}
 	unsigned char *cert_buf = NULL;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -188,10 +201,10 @@ main(int argc, char *argv[])
 	EVP_MD_CTX *ctx;
 	unsigned int md_len;
 	ctx = EVP_MD_CTX_create();
-        EVP_DigestInit_ex(ctx, md, NULL);
-        EVP_DigestUpdate(ctx, cert_buf, cert_len);
-        EVP_DigestFinal_ex(ctx, digest, &md_len);
-        EVP_MD_CTX_destroy(ctx);
+	EVP_DigestInit_ex(ctx, md, NULL);
+	EVP_DigestUpdate(ctx, cert_buf, cert_len);
+	EVP_DigestFinal_ex(ctx, digest, &md_len);
+	EVP_MD_CTX_destroy(ctx);
 	if (digest_len != md_len) {
 		fprintf(stderr, "Digest assertion failure sha%d %d != %d\n",
 			sha, digest_len, md_len);

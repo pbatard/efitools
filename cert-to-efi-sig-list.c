@@ -77,17 +77,29 @@ main(int argc, char *argv[])
 	certfile = argv[1];
 	efifile = argv[2];
 
-        ERR_load_crypto_strings();
-        OpenSSL_add_all_digests();
-        OpenSSL_add_all_ciphers();
+	ERR_load_crypto_strings();
+	OpenSSL_add_all_digests();
+	OpenSSL_add_all_ciphers();
 	/* here we may get highly unlikely failures or we'll get a
 	 * complaint about FIPS signatures (usually becuase the FIPS
 	 * module isn't present).  In either case ignore the errors
 	 * (malloc will cause other failures out lower down */
 	ERR_clear_error();
 
-        BIO *cert_bio = BIO_new_file(certfile, "r");
-        X509 *cert = PEM_read_bio_X509(cert_bio, NULL, NULL, NULL);
+	BIO *cert_bio = BIO_new_file(certfile, "r");
+	if (!cert_bio) {
+		fprintf(stderr, "failed to open certificate\n");
+		const char *error = ERR_error_string(ERR_get_error(), NULL);
+		if (error) fprintf(stderr, "%s\n", error);
+		exit(1);
+	}
+	X509 *cert = PEM_read_bio_X509(cert_bio, NULL, NULL, NULL);
+	if (!cert) {
+		fprintf(stderr, "failed to load certificate\n");
+		const char *error = ERR_error_string(ERR_get_error(), NULL);
+		if (error) fprintf(stderr, "%s\n", error);
+		exit(1);
+	}
 	int PkCertLen = i2d_X509(cert, NULL);
 
 	PkCertLen += sizeof(EFI_SIGNATURE_LIST) + OFFSET_OF(EFI_SIGNATURE_DATA, SignatureData);
