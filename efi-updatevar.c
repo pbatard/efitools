@@ -20,14 +20,14 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl_sign.h>
 
 #include <efi.h>
-
-#include <kernel_efivars.h>
-#include <openssl_sign.h>
 #include <guid.h>
 #include <sha256.h>
 #include <version.h>
+#include <kernel_efivars.h>
+
 #include "efiauthenticated.h"
 
 #define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
@@ -407,4 +407,3 @@ main(int argc, char *argv[])
 
 	return 0;
 }
-		

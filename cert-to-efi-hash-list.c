@@ -6,15 +6,6 @@
 
 
 #include <stdint.h>
-#define _XOPEN_SOURCE
-#include <efi.h>
-#ifdef CONFIG_arm
-/* FIXME:
- * arm efi leaves a visibilit pragma pushed that won't work for
- * non efi programs, so eliminate it */
-#pragma GCC visibility pop
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +20,7 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 
+#include <efi.h>
 #include <guid.h>
 #include <variables.h>
 #include <version.h>
@@ -53,7 +45,6 @@ help(const char * progname)
 	       "                   Set to 0 if not specified meaning revoke\n"
 	       "                   for all time.\n"
 	       );
-	
 }
 
 int
@@ -91,7 +82,6 @@ main(int argc, char *argv[])
 			break;
 		}
 	}
-	  
 
 	if (argc != 3) {
 		usage(progname);
@@ -122,9 +112,9 @@ main(int argc, char *argv[])
 	       timestamp.Month, timestamp.Day, timestamp.Hour, timestamp.Minute,
 	       timestamp.Second);
 
-        ERR_load_crypto_strings();
-        OpenSSL_add_all_digests();
-        OpenSSL_add_all_ciphers();
+	ERR_load_crypto_strings();
+	OpenSSL_add_all_digests();
+	OpenSSL_add_all_ciphers();
 	/* here we may get highly unlikely failures or we'll get a
 	 * complaint about FIPS signatures (usually becuase the FIPS
 	 * module isn't present).  In either case ignore the errors
@@ -148,11 +138,7 @@ main(int argc, char *argv[])
 	}
 	unsigned char *cert_buf = NULL;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	int cert_len = i2d_X509_CINF(cert->cert_info, &cert_buf);
-#else
 	int cert_len = i2d_re_X509_tbs(cert, &cert_buf);
-#endif
 	ERR_print_errors_fp(stdout);
 
 	int len, digest_len, time_offset;

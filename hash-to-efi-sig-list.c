@@ -4,14 +4,6 @@
  * see COPYING file
  */
 #include <stdint.h>
-#include <efi.h>
-#ifdef CONFIG_arm
-/* FIXME:
- * arm efi leaves a visibilit pragma pushed that won't work for
- * non efi programs, so eliminate it */
-#pragma GCC visibility pop
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,11 +14,12 @@
 #include <unistd.h>
 #include <wchar.h>
 
-#include <PeImage.h>		/* for ALIGN_VALUE */
-#include <sha256.h>
-#include <efiauthenticated.h>
+#include <efi.h>
 #include <guid.h>
+#include <sha256.h>
 #include <version.h>
+#include <efiauthenticated.h>
+#include <PeImage.h>		/* for ALIGN_VALUE */
 
 static void
 usage(const char *progname)

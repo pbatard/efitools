@@ -11,9 +11,9 @@
 #include <unistd.h>
 
 #include <efi.h>
-
-#include <version.h>
 #include <guid.h>
+#include <version.h>
+
 #include "efiauthenticated.h"
 #include "variableformat.h"
 
@@ -205,4 +205,3 @@ main(int argc, char *argv[])
 	printf("No variables found in file at offset 0x%x\n", i);
 	exit(2);
 }
-

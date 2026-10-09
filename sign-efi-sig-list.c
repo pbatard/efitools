@@ -4,14 +4,6 @@
  * see COPYING file
  */
 #include <stdint.h>
-#include <efi.h>
-#ifdef CONFIG_arm
-/* FIXME:
- * arm efi leaves a visibilit pragma pushed that won't work for
- * non efi programs, so eliminate it */
-#pragma GCC visibility pop
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,10 +14,12 @@
 #include <unistd.h>
 #include <wchar.h>
 
-#include <variables.h>
-#include <guid.h>
-#include <version.h>
 #include <openssl_sign.h>
+
+#include <efi.h>
+#include <guid.h>
+#include <variables.h>
+#include <version.h>
 
 static void
 usage(const char *progname)
@@ -186,7 +180,7 @@ main(int argc, char *argv[])
 	timestamp.Minute = tm->tm_min;
 	timestamp.Second = tm->tm_sec;
 
-	printf("Timestamp is %d-%d-%d %02d:%02d:%02d\n", timestamp.Year,
+	printf("Timestamp is %04d-%02d-%02d %02d:%02d:%02d\n", timestamp.Year,
 	       timestamp.Month, timestamp.Day, timestamp.Hour, timestamp.Minute,
 	       timestamp.Second);
 

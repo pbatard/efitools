@@ -18,11 +18,11 @@
 #include <openssl/x509.h>
 
 #include <efi.h>
-
-#include <kernel_efivars.h>
 #include <guid.h>
 #include <sha256.h>
 #include <version.h>
+#include <kernel_efivars.h>
+
 #include "efiauthenticated.h"
 
 #define ARRAY_SIZE(a) (sizeof (a) / sizeof ((a)[0]))
@@ -90,7 +90,7 @@ parse_db(const char *name, uint8_t *data, uint32_t len, int sig, int entry)
 						   CertList->SignatureSize);
 				X509_NAME *issuer = X509_get_issuer_name(X);
 				X509_NAME *subject = X509_get_subject_name(X);
-				
+
 				printf("        Subject:\n");
 				X509_NAME_print_ex_fp(stdout, subject, 12, XN_FLAG_SEP_CPLUS_SPC);
 				printf("\n        Issuer:\n");
@@ -199,4 +199,3 @@ main(int argc, char *argv[])
 	}
 	return 0;
 }
-		

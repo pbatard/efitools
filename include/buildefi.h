@@ -7,6 +7,9 @@
 #include <string.h>
 #define Print(...) printf("%ls", __VA_ARGS__)
 #define AllocatePool(x) malloc(x)
+#ifdef CopyMem
+#undef CopyMem
+#endif
 #define CopyMem(d, s, l) memcpy(d, s, l)
 #define ZeroMem(s, l) memset(s, 0, l)
 #define FreePool(s) free(s)

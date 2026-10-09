@@ -6,14 +6,6 @@
 
 
 #include <stdint.h>
-#include <efi.h>
-#ifdef CONFIG_arm
-/* FIXME:
- * arm efi leaves a visibilit pragma pushed that won't work for
- * non efi programs, so eliminate it */
-#pragma GCC visibility pop
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +13,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
+#include <efi.h>
 #include <guid.h>
 #include <variables.h>
 #include <version.h>
@@ -40,9 +33,7 @@ help(const char * progname)
 	       "Options:\n"
 	       "\t-g <guid>        Use <guid> as the owner of the signature. If this is not\n"
 	       "\t                 supplied, an all zero guid will be used\n"
-
 	       );
-	
 }
 
 int
@@ -67,10 +58,9 @@ main(int argc, char *argv[])
 			break;
 		}
 	}
-	  
 
 	if (argc != 3) {
-
+		usage(progname);
 		exit(1);
 	}
 
@@ -103,7 +93,7 @@ main(int argc, char *argv[])
 	int PkCertLen = i2d_X509(cert, NULL);
 
 	PkCertLen += sizeof(EFI_SIGNATURE_LIST) + OFFSET_OF(EFI_SIGNATURE_DATA, SignatureData);
-	EFI_SIGNATURE_LIST          *PkCert = malloc (PkCertLen);
+	EFI_SIGNATURE_LIST *PkCert = malloc (PkCertLen);
 	if (!PkCert) {
 		fprintf(stderr, "failed to malloc cert\n");
 		exit(1);
@@ -117,7 +107,7 @@ main(int argc, char *argv[])
 
 	EFI_SIGNATURE_DATA *PkCertData = (void *)PkCert + sizeof(EFI_SIGNATURE_LIST);
 
-	PkCertData->SignatureOwner = owner; 
+	PkCertData->SignatureOwner = owner;
 
 	FILE *f = fopen(efifile, "w");
 	if (!f) {
@@ -129,7 +119,6 @@ main(int argc, char *argv[])
 		perror("Did not write enough bytes to efi file");
 		exit(1);
 	}
-
 
 	return 0;
 }
